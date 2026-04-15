@@ -12,8 +12,19 @@ api_key = st.secrets["OPENAI_API_KEY"]
 if "history" not in st.session_state:
     st.session_state.history = []
 
+if "usage_count" not in st.session_state:
+    st.session_state.usage_count = 0
+
+MAX_USAGE = 5
+
 st.title("📘 StudyAI")
 st.caption("AI-powered study help for summaries, key points, and quiz questions.")
+
+remaining = MAX_USAGE - st.session_state.usage_count
+if remaining > 0:
+    st.caption(f"Free uses left: {remaining}")
+else:
+    st.caption("Free uses left: 0")
 
 st.markdown("### Enter a topic")
 topic = st.text_input(
@@ -56,6 +67,10 @@ with st.sidebar:
         st.caption("No history yet.")
 
 if generate or example:
+    if st.session_state.usage_count >= MAX_USAGE:
+        st.error("❌ You’ve reached the free usage limit (5 times).")
+        st.stop()
+
     if not api_key:
         st.error("API key is not configured.")
     elif not topic.strip():
@@ -114,13 +129,17 @@ Keep the answer clear, concise, and student-friendly.
 
                 if current_section == "summary":
                     if stripped:
+                        if stripped.startswith("-"):
+                            stripped = stripped[1:].strip()
                         summary += stripped + " "
                 elif current_section == "key_points":
                     if stripped.startswith("-"):
                         key_points.append(stripped[1:].strip())
                 elif current_section == "quiz":
-                    if stripped and (stripped[0].isdigit() or stripped.startswith("-")):
-                        quiz_questions.append(stripped.lstrip("1234567890.- ").strip())
+                    if stripped:
+                        cleaned = stripped.lstrip("1234567890.- ").strip()
+                        if cleaned:
+                            quiz_questions.append(cleaned)
 
             summary = summary.strip()
 
@@ -153,6 +172,8 @@ Keep the answer clear, concise, and student-friendly.
                     "quiz_questions": quiz_questions
                 }
             )
+
+            st.session_state.usage_count += 1
 
         except Exception as e:
             st.error(f"Error: {e}")
