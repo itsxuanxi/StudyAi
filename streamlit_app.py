@@ -29,7 +29,7 @@ else:
 st.markdown("### Enter a topic")
 topic = st.text_input(
     "",
-    placeholder="e.g. Economics, Photosynthesis, Java Arrays",
+    placeholder="e.g. Artificial intelligence",
     label_visibility="collapsed"
 )
 
