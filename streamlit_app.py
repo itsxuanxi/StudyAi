@@ -1,9 +1,16 @@
 import streamlit as st
 from openai import OpenAI
 
-st.set_page_config(page_title="StudyAI", page_icon="📘", layout="centered")
+st.set_page_config(
+    page_title="StudyAI",
+    page_icon="📘",
+    layout="centered"
+)
 
 api_key = st.secrets["OPENAI_API_KEY"]
+
+if "history" not in st.session_state:
+    st.session_state.history = []
 
 st.title("📘 StudyAI")
 st.caption("AI-powered study help for summaries, key points, and quiz questions.")
@@ -15,7 +22,7 @@ topic = st.text_input(
     label_visibility="collapsed"
 )
 
-col1, col2 = st.columns([1, 1])
+col1, col2 = st.columns(2)
 
 with col1:
     generate = st.button("Generate Study Help", use_container_width=True)
@@ -25,6 +32,28 @@ with col2:
 
 if example:
     topic = "Economics"
+
+with st.sidebar:
+    st.header("📚 History")
+
+    if st.button("Clear History", use_container_width=True):
+        st.session_state.history = []
+
+    if st.session_state.history:
+        for i, item in enumerate(reversed(st.session_state.history), 1):
+            with st.expander(f"{i}. {item['topic']}"):
+                st.markdown("**Summary**")
+                st.write(item["summary"])
+
+                st.markdown("**Key Points**")
+                for point in item["key_points"]:
+                    st.markdown(f"- {point}")
+
+                st.markdown("**Quiz Questions**")
+                for j, q in enumerate(item["quiz_questions"], 1):
+                    st.markdown(f"{j}. {q}")
+    else:
+        st.caption("No history yet.")
 
 if generate or example:
     if not api_key:
@@ -65,9 +94,6 @@ Keep the answer clear, concise, and student-friendly.
 
             output = response.output_text
 
-            st.divider()
-            st.subheader(f"Study Topic: {topic}")
-
             summary = ""
             key_points = []
             quiz_questions = []
@@ -96,22 +122,37 @@ Keep the answer clear, concise, and student-friendly.
                     if stripped and (stripped[0].isdigit() or stripped.startswith("-")):
                         quiz_questions.append(stripped.lstrip("1234567890.- ").strip())
 
+            summary = summary.strip()
+
+            st.divider()
+            st.subheader(f"📊 Study Result: {topic}")
+            st.caption("⚡ Powered by OpenAI")
+
             st.markdown("### 📌 Summary")
-            st.write(summary.strip() if summary.strip() else "No summary generated.")
+            st.info(summary if summary else "No summary generated.")
 
             st.markdown("### 🔑 Key Points")
             if key_points:
                 for point in key_points:
-                    st.markdown(f"- {point}")
+                    st.success(point)
             else:
                 st.write("No key points generated.")
 
             st.markdown("### ❓ Quiz Questions")
             if quiz_questions:
                 for i, q in enumerate(quiz_questions, 1):
-                    st.markdown(f"{i}. {q}")
+                    st.warning(f"{i}. {q}")
             else:
                 st.write("No quiz questions generated.")
+
+            st.session_state.history.append(
+                {
+                    "topic": topic,
+                    "summary": summary,
+                    "key_points": key_points,
+                    "quiz_questions": quiz_questions
+                }
+            )
 
         except Exception as e:
             st.error(f"Error: {e}")
