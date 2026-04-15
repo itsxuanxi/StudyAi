@@ -6,12 +6,16 @@ st.set_page_config(page_title="StudyAI", page_icon="📘")
 st.title("📘 StudyAI")
 st.write("An AI-powered study assistant for summaries, key points, and quiz questions.")
 
-api_key = st.text_input("Enter your OpenAI API key", type="password")
-topic = st.text_input("Enter a study topic", placeholder="e.g. Economics, Photosynthesis, Java Arrays")
+api_key = st.secrets["OPENAI_API_KEY"]
+
+topic = st.text_input(
+    "Enter a study topic",
+    placeholder="e.g. Economics, Photosynthesis, Java Arrays"
+)
 
 if st.button("Generate Study Help"):
     if not api_key:
-        st.warning("Please enter your OpenAI API key.")
+        st.error("API key is not configured.")
     elif not topic.strip():
         st.warning("Please enter a study topic.")
     else:
@@ -31,7 +35,7 @@ Give:
 Keep the answer clear, concise, and student-friendly.
 """
 
-            with st.spinner("Generating study help..."):
+            with st.spinner("Generating..."):
                 response = client.responses.create(
                     model="gpt-4o-mini",
                     input=prompt
