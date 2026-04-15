@@ -3,7 +3,7 @@ from openai import OpenAI
 
 st.set_page_config(
     page_title="StudyAI",
-    page_icon="📘",
+    page_icon="📚",
     layout="centered"
 )
 
@@ -17,7 +17,7 @@ if "usage_count" not in st.session_state:
 
 MAX_USAGE = 5
 
-st.title("📘 StudyAI")
+st.title("📚 StudyAI")
 st.caption("AI-powered study help for summaries, key points, and quiz questions.")
 
 remaining = MAX_USAGE - st.session_state.usage_count
