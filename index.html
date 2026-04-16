@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Future AI Megacity</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #040711;
+      font-family: Inter, Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    .ui {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .title {
+      position: absolute;
+      top: 28px;
+      left: 32px;
+      color: white;
+      text-shadow: 0 0 24px rgba(0,255,255,0.18);
+    }
+    .title h1 {
+      font-size: 52px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      line-height: 1;
+      background: linear-gradient(90deg, #8be9fd, #bd93f9, #50fa7b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .title p {
+      margin-top: 10px;
+      color: rgba(255,255,255,0.72);
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+    .pill {
+      position: absolute;
+      right: 28px;
+      top: 28px;
+      color: rgba(255,255,255,0.88);
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(14px);
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 24px rgba(0,255,255,0.08);
+    }
+    .footer {
+      position: absolute;
+      left: 32px;
+      bottom: 28px;
+      color: rgba(255,255,255,0.58);
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div class="ui">
+    <div class="title">
+      <h1>AI MEGACITY 2099</h1>
+      <p>Neon skyline • flying traffic • autonomous future metropolis</p>
+    </div>
+    <div class="pill">LIVE FUTURE CITY</div>
+    <div class="footer">Refresh to regenerate the city</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+
+    let w = 0, h = 0;
+    let stars = [], farBuildings = [], midBuildings = [], frontBuildings = [];
+    let drones = [], cars = [], billboards = [], beams = [];
+
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      generateScene();
+    }
+
+    window.addEventListener("resize", resize);
+
+    function generateStars() {
+      stars = Array.from({ length: 180 }, () => ({
+        x: rand(0, w),
+        y: rand(0, h * 0.7),
+        r: rand(0.5, 2),
+        phase: rand(0, Math.PI * 2),
+        speed: rand(0.003, 0.012)
+      }));
+    }
+
+    function makeBuildings(layer, yBase, minW, maxW, minH, maxH, gapMin, gapMax) {
+      const arr = [];
+      let x = 0;
+      while (x < w) {
+        const bw = rand(minW, maxW);
+        const bh = rand(minH, maxH);
+        const hue = rand(180, 320);
+        const topType = Math.floor(rand(0, 5));
+
+        const b = {
+          layer,
+          x,
+          y: yBase - bh,
+          w: bw,
+          h: bh,
+          hue,
+          topType,
+          windows: []
+        };
+
+        const cols = Math.max(2, Math.floor(bw / rand(16, 24)));
+        const rows = Math.max(4, Math.floor(bh / rand(20, 28)));
+
+        for (let ry = 0; ry < rows; ry++) {
+          for (let cx = 0; cx < cols; cx++) {
+            if (Math.random() > 0.14) {
+              b.windows.push({
+                x: x + 8 + cx * ((bw - 16) / cols),
+                y: yBase - bh + 10 + ry * ((bh - 18) / rows),
+                w: rand(4, 8),
+                h: rand(7, 14),
+                on: Math.random() > 0.22,
+                pulse: rand(0, Math.PI * 2)
+              });
+            }
+          }
+        }
+
+        arr.push(b);
+        x += bw + rand(gapMin, gapMax);
+      }
+      return arr;
+    }
+
+    function generateBillboards() {
+      const colors = [
+        ["#00f5ff", "#7c4dff"],
+        ["#ff4fd8", "#00e5ff"],
+        ["#50fa7b", "#00d4ff"],
+        ["#ffd166", "#ff4fd8"]
+      ];
+      billboards = [];
+
+      frontBuildings.forEach(b => {
+        if (Math.random() > 0.55 && b.w > 70 && b.h > 180) {
+          const scheme = pick(colors);
+          billboards.push({
+            x: b.x + rand(8, b.w * 0.35),
+            y: b.y + rand(20, b.h * 0.45),
+            w: rand(34, Math.min(92, b.w - 16)),
+            h: rand(20, 38),
+            c1: scheme[0],
+            c2: scheme[1],
+            text: pick(["AI", "NOVA", "NEON", "SYN", "CORE", "VX"])
+          });
+        }
+      });
+    }
+
+    function generateDrones() {
+      drones = Array.from({ length: 20 }, () => ({
+        x: rand(0, w),
+        y: rand(h * 0.12, h * 0.56),
+        r: rand(2, 4),
+        speed: rand(0.8, 2.6),
+        trail: []
+      }));
+    }
+
+    function generateCars() {
+      const lanes = [h - 112, h - 92, h - 72];
+      cars = Array.from({ length: 24 }, () => ({
+        x: rand(-w, w),
+        y: pick(lanes),
+        len: rand(16, 34),
+        speed: rand(2, 7) * (Math.random() > 0.5 ? 1 : -1),
+        color: pick(["#00e5ff", "#ff4fd8", "#7c4dff", "#50fa7b", "#ffd166"])
+      }));
+    }
+
+    function generateBeams() {
+      beams = frontBuildings
+        .filter(() => Math.random() > 0.72)
+        .slice(0, 9)
+        .map(b => ({
+          x: b.x + b.w / 2,
+          y: b.y,
+          hue: b.hue,
+          width: rand(12, 28),
+          phase: rand(0, Math.PI * 2)
+        }));
+    }
+
+    function generateScene() {
+      generateStars();
+      farBuildings = makeBuildings("far", h - 145, 36, 82, h * 0.10, h * 0.26, 2, 10);
+      midBuildings = makeBuildings("mid", h - 100, 46, 100, h * 0.16, h * 0.38, 4, 12);
+      frontBuildings = makeBuildings("front", h - 48, 54, 124, h * 0.24, h * 0.66, 6, 15);
+      generateBillboards();
+      generateDrones();
+      generateCars();
+      generateBeams();
+    }
+
+    function sky() {
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "#02030a");
+      g.addColorStop(0.25, "#07112a");
+      g.addColorStop(0.55, "#0b1430");
+      g.addColorStop(1, "#050916");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      const g1 = ctx.createRadialGradient(w * 0.2, h * 0.18, 0, w * 0.2, h * 0.18, w * 0.4);
+      g1.addColorStop(0, "rgba(0,255,255,0.12)");
+      g1.addColorStop(1, "rgba(0,255,255,0)");
+      ctx.fillStyle = g1;
+      ctx.fillRect(0, 0, w, h);
+
+      const g2 = ctx.createRadialGradient(w * 0.82, h * 0.22, 0, w * 0.82, h * 0.22, w * 0.32);
+      g2.addColorStop(0, "rgba(255,0,180,0.10)");
+      g2.addColorStop(1, "rgba(255,0,180,0)");
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function moon() {
+      const x = w * 0.78, y = h * 0.16, r = Math.min(w, h) * 0.055;
+
+      const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 2.8);
+      glow.addColorStop(0, "rgba(130,240,255,0.18)");
+      glow.addColorStop(1, "rgba(130,240,255,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(x, y, r * 2.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(220,250,255,0.86)";
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawStars(t) {
+      for (const s of stars) {
+        const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
+        ctx.fillStyle = `rgba(255,255,255,${a})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawLayer(buildings, opacityTop, opacityBottom) {
+      for (const b of buildings) {
+        const grad = ctx.createLinearGradient(0, b.y, 0, b.y + b.h);
+        grad.addColorStop(0, `hsla(${b.hue}, 90%, 62%, ${opacityTop})`);
+        grad.addColorStop(0.12, "rgba(20,25,45,0.95)");
+        grad.addColorStop(1, `rgba(6,8,18,${opacityBottom})`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+
+        ctx.strokeStyle = "rgba(255,255,255,0.05)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+      }
+    }
+
+    function drawTops(buildings) {
+      for (const b of buildings) {
+        ctx.strokeStyle = `hsla(${b.hue}, 100%, 70%, 0.78)`;
+        ctx.fillStyle = `hsla(${b.hue}, 100%, 70%, 0.78)`;
+
+        if (b.topType === 0) {
+          ctx.beginPath();
+          ctx.moveTo(b.x + b.w / 2, b.y);
+          ctx.lineTo(b.x + b.w / 2, b.y - 26);
+          ctx.stroke();
+        } else if (b.topType === 1) {
+          ctx.beginPath();
+          ctx.moveTo(b.x + b.w * 0.2, b.y + 8);
+          ctx.lineTo(b.x + b.w * 0.8, b.y + 8);
+          ctx.stroke();
+        } else if (b.topType === 2) {
+          ctx.beginPath();
+          ctx.arc(b.x + b.w / 2, b.y + 10, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (b.topType === 3) {
+          ctx.beginPath();
+          ctx.moveTo(b.x + b.w * 0.3, b.y + 12);
+          ctx.lineTo(b.x + b.w * 0.7, b.y + 12);
+          ctx.lineTo(b.x + b.w * 0.5, b.y - 10);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
+
+    function drawWindows(buildings, t) {
+      for (const b of buildings) {
+        for (const win of b.windows) {
+          const flicker = 0.72 + 0.28 * Math.sin(t * 0.003 + win.pulse);
+          if (win.on) {
+            ctx.fillStyle = `rgba(120,240,255,${0.45 * flicker})`;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = "rgba(0,255,255,0.30)";
+          } else {
+            ctx.fillStyle = "rgba(255,255,255,0.05)";
+            ctx.shadowBlur = 0;
+          }
+          ctx.fillRect(win.x, win.y, win.w, win.h);
+        }
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    function drawBillboards(t) {
+      for (const b of billboards) {
+        const grad = ctx.createLinearGradient(b.x, b.y, b.x + b.w, b.y + b.h);
+        grad.addColorStop(0, b.c1);
+        grad.addColorStop(1, b.c2);
+
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = b.c1;
+        ctx.fillStyle = grad;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "rgba(255,255,255,0.28)";
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.font = `bold ${Math.max(10, b.h * 0.42)}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(b.text, b.x + b.w / 2, b.y + b.h / 2);
+
+        if (Math.sin(t * 0.004 + b.x) > 0.92) {
+          ctx.fillStyle = "rgba(255,255,255,0.2)";
+          ctx.fillRect(b.x, b.y, b.w, b.h);
+        }
+      }
+    }
+
+    function drawBeams(t) {
+      for (const b of beams) {
+        const width = b.width * (0.8 + 0.2 * Math.sin(t * 0.002 + b.phase));
+        const g = ctx.createLinearGradient(b.x, b.y - h * 0.38, b.x, b.y);
+        g.addColorStop(0, `hsla(${b.hue}, 100%, 65%, 0)`);
+        g.addColorStop(1, `hsla(${b.hue}, 100%, 65%, 0.13)`);
+        ctx.fillStyle = g;
+
+        ctx.beginPath();
+        ctx.moveTo(b.x - width * 0.5, b.y);
+        ctx.lineTo(b.x - width * 2.2, b.y - h * 0.36);
+        ctx.lineTo(b.x + width * 2.2, b.y - h * 0.36);
+        ctx.lineTo(b.x + width * 0.5, b.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    function drawDrones() {
+      for (const d of drones) {
+        d.x += d.speed;
+        if (d.x > w + 30) {
+          d.x = -30;
+          d.y = rand(h * 0.12, h * 0.56);
+          d.trail = [];
+        }
+
+        d.trail.push({ x: d.x, y: d.y });
+        if (d.trail.length > 18) d.trail.shift();
+
+        for (let i = 0; i < d.trail.length; i++) {
+          const p = d.trail[i];
+          const a = i / d.trail.length;
+          ctx.fillStyle = `rgba(0,255,255,${a * 0.24})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, d.r * a, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.fillStyle = "rgba(180,255,255,0.95)";
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = "rgba(0,255,255,0.75)";
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function drawRoad() {
+      const roadTop = h - 130;
+      const roadBottom = h;
+
+      const g = ctx.createLinearGradient(0, roadTop, 0, roadBottom);
+      g.addColorStop(0, "rgba(0,180,255,0.08)");
+      g.addColorStop(1, "rgba(0,0,0,0.94)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, roadTop, w, roadBottom - roadTop);
+
+      ctx.strokeStyle = "rgba(0,255,255,0.16)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, h - 112);
+      ctx.lineTo(w, h - 112);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(0, h - 72);
+      ctx.lineTo(w, h - 72);
+      ctx.stroke();
+
+      for (let i = 0; i < w; i += 56) {
+        ctx.strokeStyle = "rgba(255,255,255,0.05)";
+        ctx.beginPath();
+        ctx.moveTo(i, roadTop);
+        ctx.lineTo(i + 34, h);
+        ctx.stroke();
+      }
+    }
+
+    function drawCars() {
+      for (const car of cars) {
+        car.x += car.speed;
+        if (car.speed > 0 && car.x > w + 80) car.x = -80;
+        if (car.speed < 0 && car.x < -80) car.x = w + 80;
+
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = car.color;
+        ctx.fillStyle = car.color;
+        ctx.fillRect(car.x, car.y, car.len, 3);
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.fillRect(car.x + car.len - 2, car.y, 4, 3);
+      }
+    }
+
+    function animate(t) {
+      ctx.clearRect(0, 0, w, h);
+
+      sky();
+      moon();
+      drawStars(t);
+
+      drawLayer(farBuildings, 0.12, 0.78);
+      drawLayer(midBuildings, 0.18, 0.92);
+      drawLayer(frontBuildings, 0.25, 1);
+
+      drawBeams(t);
+      drawTops(midBuildings);
+      drawTops(frontBuildings);
+      drawWindows(midBuildings, t);
+      drawWindows(frontBuildings, t);
+      drawBillboards(t);
+
+      drawRoad();
+      drawCars();
+      drawDrones();
+
+      requestAnimationFrame(animate);
+    }
+
+    resize();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
