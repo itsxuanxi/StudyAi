@@ -19,6 +19,7 @@ MAX_USAGE = 5
 
 st.title("📚 StudyAI")
 st.caption("AI-powered study help for summaries, key points, and quiz questions.")
+st.markdown("🌐 **Website:** [https://studyai-x.streamlit.app/](https://studyai-x.streamlit.app/)")
 
 remaining = MAX_USAGE - st.session_state.usage_count
 if remaining > 0:
