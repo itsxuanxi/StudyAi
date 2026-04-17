@@ -1,32 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>StudyAI NYC</title>
-
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { overflow: hidden; background: black; }
 
-    body {
-      overflow: hidden;
-      background: black;
-    }
-
-    /* 🎬 背景视频 */
     video {
       position: fixed;
+      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      filter: brightness(0.9) contrast(1.1);
+      background: black;
     }
 
-    /* 🌐 顶部网址栏 */
     .browser-bar {
       position: absolute;
       top: 20px;
@@ -48,7 +38,6 @@
       color: #111;
     }
 
-    /* 🔥 CTA按钮 */
     .btn {
       position: absolute;
       bottom: 40px;
@@ -62,14 +51,8 @@
       text-decoration: none;
       color: black;
       z-index: 10;
-      transition: 0.3s;
     }
 
-    .btn:hover {
-      transform: translateX(-50%) scale(1.05);
-    }
-
-    /* 🎬 渐变增强电影感 */
     .overlay-top {
       position: absolute;
       top: 0;
@@ -77,6 +60,7 @@
       height: 200px;
       background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
       z-index: 5;
+      pointer-events: none;
     }
 
     .overlay-bottom {
@@ -86,33 +70,63 @@
       height: 200px;
       background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
       z-index: 5;
+      pointer-events: none;
+    }
+
+    .debug {
+      position: absolute;
+      left: 20px;
+      bottom: 20px;
+      z-index: 20;
+      color: white;
+      background: rgba(0,0,0,0.6);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 14px;
     }
   </style>
 </head>
-
 <body>
 
-  <!-- 🎬 你的纽约视频 -->
-<video autoplay muted loop playsinline>
-  <source src="./nyc.mp4" type="video/mp4">
-  Your browser does not support video.
-</video>
+  <video id="bgVideo" autoplay muted loop playsinline>
+    <source src="nyc.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
 
-  <!-- 渐变 -->
   <div class="overlay-top"></div>
   <div class="overlay-bottom"></div>
 
-  <!-- 🌐 网址 -->
   <div class="browser-bar">
-    <div class="url">
-      https://studyai-x.streamlit.app
-    </div>
+    <div class="url">https://studyai-x.streamlit.app</div>
   </div>
 
-  <!-- 🔥 按钮 -->
-  <a class="btn" href="https://studyai-x.streamlit.app" target="_blank">
-    Try StudyAI
-  </a>
+  <a class="btn" href="https://studyai-x.streamlit.app" target="_blank">Try StudyAI</a>
+
+  <div class="debug" id="debug">Loading video...</div>
+
+  <script>
+    const video = document.getElementById("bgVideo");
+    const debug = document.getElementById("debug");
+
+    function setMsg(msg) {
+      debug.textContent = msg;
+      console.log(msg);
+    }
+
+    video.addEventListener("loadedmetadata", () => setMsg("loadedmetadata: video found"));
+    video.addEventListener("canplay", () => setMsg("canplay: video can play"));
+    video.addEventListener("playing", () => setMsg("playing: video is playing"));
+    video.addEventListener("error", () => {
+      const err = video.error;
+      setMsg("video error: " + (err ? err.code : "unknown"));
+    });
+
+    video.play().then(() => {
+      setMsg("play() success");
+    }).catch((e) => {
+      setMsg("play() blocked/error: " + e.message);
+    });
+  </script>
 
 </body>
 </html>
