@@ -94,4 +94,446 @@
       bottom: 18px;
       left: 50%;
       transform: translateX(-50%);
-     
+      z-index: 12;
+      color: rgba(255,255,255,0.9);
+      font-size: 18px;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.55);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="browser-bar">
+    <div class="dots">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+    </div>
+    <div class="url-box">
+      <a href="https://studyai-x.streamlit.app" target="_blank">
+        https://studyai-x.streamlit.app
+      </a>
+    </div>
+  </div>
+
+  <canvas id="scene"></canvas>
+  <div class="hint">Walking forward through Times Square at night</div>
+
+  <script>
+    const canvas = document.getElementById("scene");
+    const ctx = canvas.getContext("2d");
+
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+
+    window.addEventListener("resize", () => {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      initBuildings();
+    });
+
+    const horizonY = () => h * 0.43;
+    const roadBottom = () => h;
+    const vanishingX = () => w * 0.5;
+
+    let buildingsLeft = [];
+    let buildingsRight = [];
+    let rainStreaks = [];
+
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function initBuildings() {
+      buildingsLeft = [];
+      buildingsRight = [];
+
+      let x = 0;
+      while (x < w * 0.32) {
+        const bw = rand(70, 140);
+        const bh = rand(h * 0.28, h * 0.62);
+        buildingsLeft.push({
+          x,
+          w: bw,
+          h: bh,
+          hue: rand(185, 340),
+          signs: Math.floor(rand(1, 4))
+        });
+        x += bw + rand(8, 20);
+      }
+
+      x = w;
+      while (x > w * 0.68) {
+        const bw = rand(70, 160);
+        const bh = rand(h * 0.28, h * 0.65);
+        x -= bw;
+        buildingsRight.push({
+          x,
+          w: bw,
+          h: bh,
+          hue: rand(180, 340),
+          signs: Math.floor(rand(1, 4))
+        });
+        x -= rand(8, 20);
+      }
+
+      rainStreaks = Array.from({ length: 120 }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        len: rand(10, 26),
+        speed: rand(6, 13)
+      }));
+    }
+
+    initBuildings();
+
+    function drawSky(time) {
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "#070b14");
+      g.addColorStop(0.45, "#111a30");
+      g.addColorStop(0.75, "#12151d");
+      g.addColorStop(1, "#090a0f");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      const glow = ctx.createRadialGradient(vanishingX(), horizonY() - 20, 10, vanishingX(), horizonY(), w * 0.45);
+      glow.addColorStop(0, "rgba(110,140,255,0.22)");
+      glow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h);
+
+      for (let i = 0; i < 40; i++) {
+        ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.sin(time * 0.002 + i) * 0.15})`;
+        ctx.fillRect((i * 149) % w, (i * 57) % (h * 0.35), 2, 2);
+      }
+    }
+
+    function drawRoad() {
+      const yTop = horizonY();
+      const leftTop = w * 0.42;
+      const rightTop = w * 0.58;
+
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      ctx.lineTo(w, h);
+      ctx.lineTo(rightTop, yTop);
+      ctx.lineTo(leftTop, yTop);
+      ctx.closePath();
+
+      const roadGrad = ctx.createLinearGradient(0, yTop, 0, h);
+      roadGrad.addColorStop(0, "#232632");
+      roadGrad.addColorStop(0.45, "#111318");
+      roadGrad.addColorStop(1, "#060708");
+      ctx.fillStyle = roadGrad;
+      ctx.fill();
+
+      const reflectGrad = ctx.createLinearGradient(0, yTop, 0, h);
+      reflectGrad.addColorStop(0, "rgba(80,170,255,0.02)");
+      reflectGrad.addColorStop(0.5, "rgba(255,70,140,0.08)");
+      reflectGrad.addColorStop(1, "rgba(255,180,70,0.14)");
+      ctx.fillStyle = reflectGrad;
+      ctx.fill();
+
+      for (let i = 0; i < 16; i++) {
+        const t = i / 16;
+        const y = yTop + (h - yTop) * Math.pow(t, 1.7);
+        const segW = 6 + t * 18;
+        const segH = 8 + t * 16;
+        const dashGap = 28 + t * 35;
+        ctx.fillStyle = "rgba(255,220,110,0.95)";
+        ctx.fillRect(vanishingX() - segW / 2, y, segW, segH);
+        i += 0;
+      }
+
+      for (let i = 0; i < 18; i++) {
+        const t = i / 18;
+        const y = yTop + (h - yTop) * Math.pow(t, 1.45);
+        ctx.strokeStyle = `rgba(255,255,255,${0.02 + t * 0.05})`;
+        ctx.lineWidth = 1 + t * 2;
+        ctx.beginPath();
+        ctx.moveTo(w * (0.5 - 0.07 * t), y);
+        ctx.lineTo(w * (0.5 + 0.07 * t), y);
+        ctx.stroke();
+      }
+    }
+
+    function drawBuildings(time) {
+      const flicker = (n) => 0.6 + 0.4 * Math.sin(time * 0.004 + n);
+
+      function drawSide(buildings, side) {
+        for (let i = 0; i < buildings.length; i++) {
+          const b = buildings[i];
+          const x = b.x;
+          const y = horizonY() - b.h;
+          const bw = b.w;
+          const bh = b.h;
+
+          const base = ctx.createLinearGradient(x, y, x, y + bh);
+          base.addColorStop(0, "#151d30");
+          base.addColorStop(1, "#090d16");
+          ctx.fillStyle = base;
+          ctx.fillRect(x, y, bw, bh);
+
+          for (let r = 0; r < bh / 26; r++) {
+            for (let c = 0; c < bw / 22; c++) {
+              if (Math.random() > 0.35) {
+                ctx.fillStyle = Math.random() > 0.5
+                  ? "rgba(255,214,120,0.85)"
+                  : "rgba(170,220,255,0.75)";
+                ctx.fillRect(x + 8 + c * 20, y + 10 + r * 24, 9, 13);
+              }
+            }
+          }
+
+          for (let s = 0; s < b.signs; s++) {
+            const signW = rand(bw * 0.35, bw * 0.8);
+            const signH = rand(26, 90);
+            const sx = x + rand(5, Math.max(8, bw - signW - 5));
+            const sy = y + rand(15, Math.max(20, bh - signH - 20));
+            const hue = b.hue + rand(-20, 20);
+            ctx.fillStyle = `hsla(${hue}, 95%, 60%, 0.18)`;
+            ctx.strokeStyle = `hsla(${hue}, 100%, 70%, ${0.65 * flicker(i + s)})`;
+            ctx.lineWidth = 2;
+            ctx.fillRect(sx, sy, signW, signH);
+            ctx.strokeRect(sx, sy, signW, signH);
+
+            ctx.shadowColor = `hsla(${hue}, 100%, 70%, 0.8)`;
+            ctx.shadowBlur = 18;
+            ctx.fillStyle = `hsla(${hue}, 100%, 75%, ${0.85 * flicker(i + s + 1)})`;
+            ctx.font = `bold ${Math.max(12, signH * 0.28)}px Arial`;
+            ctx.textAlign = "center";
+            ctx.fillText(
+              ["AI", "NYC", "LIVE", "X", "VISION", "MODE"][Math.floor(rand(0, 6))],
+              sx + signW / 2,
+              sy + signH / 2 + 5
+            );
+            ctx.shadowBlur = 0;
+          }
+
+          if (side === "left") {
+            ctx.fillStyle = "rgba(255,255,255,0.02)";
+            ctx.fillRect(x + bw - 6, y, 6, bh);
+          } else {
+            ctx.fillStyle = "rgba(255,255,255,0.02)";
+            ctx.fillRect(x, y, 6, bh);
+          }
+        }
+      }
+
+      drawSide(buildingsLeft, "left");
+      drawSide(buildingsRight, "right");
+    }
+
+    function drawCrowd(time) {
+      for (let i = 0; i < 20; i++) {
+        const lane = i % 2 === 0 ? -1 : 1;
+        const t = (i * 0.053 + (time * 0.00008 * (1 + i * 0.03))) % 1;
+        const y = horizonY() + (h - horizonY()) * (0.25 + t * 0.52);
+        const spread = (1 - t) * 160;
+        const x = vanishingX() + lane * (40 + (i * 13 % 90) + spread);
+        const scale = 0.18 + t * 0.45;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = 0.35 + scale * 0.7;
+
+        ctx.fillStyle = "rgba(20,20,28,0.95)";
+        ctx.beginPath();
+        ctx.arc(0, -42, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(-14, -28);
+        ctx.lineTo(14, -28);
+        ctx.lineTo(20, 18);
+        ctx.lineTo(-20, 18);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(20,20,28,0.95)";
+        ctx.lineWidth = 6;
+        const step = Math.sin(time * 0.012 + i) * 8;
+        ctx.beginPath();
+        ctx.moveTo(-8, 18);
+        ctx.lineTo(-8 - step * 0.3, 44);
+        ctx.moveTo(8, 18);
+        ctx.lineTo(8 + step * 0.3, 44);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    function drawRain() {
+      ctx.strokeStyle = "rgba(180,210,255,0.15)";
+      ctx.lineWidth = 1.2;
+      for (const r of rainStreaks) {
+        ctx.beginPath();
+        ctx.moveTo(r.x, r.y);
+        ctx.lineTo(r.x - 4, r.y + r.len);
+        ctx.stroke();
+
+        r.y += r.speed;
+        r.x -= r.speed * 0.2;
+
+        if (r.y > h) {
+          r.y = -20;
+          r.x = Math.random() * w;
+        }
+        if (r.x < -10) r.x = w + 10;
+      }
+    }
+
+    function drawMainCharacter(time) {
+      // Progress loops: character remains centered and walks deeper into the city
+      const cycle = 7000;
+      const p = (time % cycle) / cycle;
+
+      // Big near camera -> smaller deeper in the street
+      const scale = 1.25 - p * 0.72;
+      const x = vanishingX();
+      const startY = h * 0.93;
+      const endY = h * 0.64;
+      const y = startY - (startY - endY) * p;
+
+      const step = Math.sin(time * 0.014) * 1;
+      const armSwing = Math.sin(time * 0.014) * 18;
+      const coatSway = Math.sin(time * 0.010) * 2.5;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+
+      // Reflection
+      ctx.save();
+      ctx.globalAlpha = 0.10;
+      ctx.scale(1, -0.55);
+      ctx.translate(0, 28);
+      drawCharacterShape(step, armSwing, coatSway, true);
+      ctx.restore();
+
+      // Shadow
+      ctx.fillStyle = "rgba(0,0,0,0.28)";
+      ctx.beginPath();
+      ctx.ellipse(0, 26, 34, 11, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Main
+      drawCharacterShape(step, armSwing, coatSway, false);
+
+      ctx.restore();
+    }
+
+    function drawCharacterShape(step, armSwing, coatSway, reflection) {
+      const bodyColor = reflection ? "rgba(20,20,30,0.8)" : "rgba(10,10,16,0.97)";
+      const edgeColor = reflection ? "rgba(60,80,120,0.2)" : "rgba(80,110,170,0.18)";
+
+      // legs
+      ctx.strokeStyle = bodyColor;
+      ctx.lineWidth = 10;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-10, -8);
+      ctx.lineTo(-14 - step * 7, 25);
+      ctx.moveTo(10, -8);
+      ctx.lineTo(14 + step * 7, 25);
+      ctx.stroke();
+
+      // torso / coat
+      ctx.fillStyle = bodyColor;
+      ctx.strokeStyle = edgeColor;
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(-26, -78);
+      ctx.quadraticCurveTo(-28 + coatSway, -24, -36, -4);
+      ctx.quadraticCurveTo(-18, 6, 0, 2);
+      ctx.quadraticCurveTo(18, 6, 36, -4);
+      ctx.quadraticCurveTo(28 - coatSway, -24, 26, -78);
+      ctx.quadraticCurveTo(0, -96, -26, -78);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // shoulders / hoodie
+      ctx.fillStyle = reflection ? "rgba(30,30,42,0.75)" : "rgba(16,16,23,0.98)";
+      ctx.beginPath();
+      ctx.moveTo(-24, -78);
+      ctx.quadraticCurveTo(0, -95, 24, -78);
+      ctx.quadraticCurveTo(18, -62, 0, -58);
+      ctx.quadraticCurveTo(-18, -62, -24, -78);
+      ctx.closePath();
+      ctx.fill();
+
+      // arms
+      ctx.strokeStyle = bodyColor;
+      ctx.lineWidth = 9;
+      ctx.beginPath();
+      ctx.moveTo(-22, -62);
+      ctx.lineTo(-34 - armSwing * 0.22, -18);
+      ctx.moveTo(22, -62);
+      ctx.lineTo(34 + armSwing * 0.22, -18);
+      ctx.stroke();
+
+      // head
+      ctx.fillStyle = reflection ? "rgba(26,26,34,0.82)" : "rgba(14,14,18,0.99)";
+      ctx.beginPath();
+      ctx.arc(0, -102, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      // neck
+      ctx.fillRect(-6, -89, 12, 10);
+
+      // slight shoulder neon rim
+      if (!reflection) {
+        ctx.strokeStyle = "rgba(90,150,255,0.12)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-21, -77);
+        ctx.quadraticCurveTo(0, -90, 21, -77);
+        ctx.stroke();
+      }
+    }
+
+    function drawCars(time) {
+      for (let i = 0; i < 6; i++) {
+        const laneSide = i % 2 === 0 ? -1 : 1;
+        const t = (time * 0.00012 * (1 + i * 0.05) + i * 0.14) % 1;
+        const y = horizonY() + (h - horizonY()) * (0.18 + t * 0.72);
+        const x = vanishingX() + laneSide * (55 + t * 250 + i * 10);
+        const scale = 0.08 + t * 0.35;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        ctx.fillStyle = i % 3 === 0 ? "#ffffff" : i % 3 === 1 ? "#ffd7d7" : "#d7e6ff";
+        ctx.fillRect(-34, -10, 68, 20);
+        ctx.fillRect(-20, -20, 40, 12);
+
+        ctx.fillStyle = "rgba(255,80,80,0.9)";
+        ctx.fillRect(-30, -4, 6, 4);
+        ctx.fillRect(24, -4, 6, 4);
+
+        ctx.restore();
+      }
+    }
+
+    function render(time) {
+      ctx.clearRect(0, 0, w, h);
+      drawSky(time);
+      drawBuildings(time);
+      drawRoad();
+      drawCars(time);
+      drawCrowd(time);
+      drawMainCharacter(time);
+      drawRain();
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
