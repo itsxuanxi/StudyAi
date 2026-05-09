@@ -10,7 +10,6 @@ st.set_page_config(
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-# ---------- CSS ----------
 st.markdown("""
 <style>
 [data-testid="stSidebar"] {
@@ -20,56 +19,44 @@ st.markdown("""
     color: white;
 }
 .block-container {
-    padding-top: 2rem;
     max-width: 900px;
+    padding-top: 2rem;
 }
-.chat-title {
+.title {
     text-align: center;
-    font-size: 42px;
+    font-size: 48px;
     font-weight: 800;
-    margin-top: 40px;
+    margin-top: 80px;
 }
-.chat-subtitle {
+.subtitle {
     text-align: center;
     color: #8e8e8e;
-    margin-bottom: 40px;
+    font-size: 20px;
 }
-.stChatInput {
-    max-width: 850px;
-    margin: auto;
+.plus-box {
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 16px;
+    background: #f9fafb;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- Session State ----------
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+if "show_tools" not in st.session_state:
+    st.session_state.show_tools = False
 
 if "memory" not in st.session_state:
     st.session_state.memory = ""
 
-# ---------- Sidebar ----------
 with st.sidebar:
     st.title("💬 ChatX")
 
-    if st.button("➕ New Chat", use_container_width=True):
-        if st.session_state.messages:
-            first_msg = st.session_state.messages[0]["content"][:35]
-            st.session_state.chat_history.append(first_msg)
+    if st.button("New Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
-
-    st.markdown("---")
-    st.caption("Chats")
-
-    if st.session_state.chat_history:
-        for chat in st.session_state.chat_history[::-1]:
-            st.button(chat, use_container_width=True)
-    else:
-        st.caption("No previous chats")
 
     st.markdown("---")
 
@@ -88,60 +75,59 @@ with st.sidebar:
         height=100
     )
 
-    st.markdown("---")
+if not st.session_state.messages:
+    st.markdown("<div class='title'>What can I help with?</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subtitle'>Ask questions, write code, analyze files, and build ideas.</div>", unsafe_allow_html=True)
+
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+uploaded_file = None
+uploaded_image = None
+file_context = ""
+image_content = None
+
+col1, col2 = st.columns([1, 12])
+
+with col1:
+    if st.button("＋"):
+        st.session_state.show_tools = not st.session_state.show_tools
+
+with col2:
+    user_input = st.chat_input("Ask ChatX")
+
+if st.session_state.show_tools:
+    st.markdown("<div class='plus-box'>", unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader(
-        "Upload file",
-        type=["txt", "md", "py", "csv", "json", "html", "css", "js"]
+        "📎 Add files",
+        type=["txt", "md", "py", "csv", "json", "html", "css", "js", "pdf"]
     )
 
     uploaded_image = st.file_uploader(
-        "Upload image",
+        "🖼️ Add photos",
         type=["png", "jpg", "jpeg"],
         key="image_upload"
     )
 
-    st.markdown("---")
-    st.caption("Built by ChatX")
-
-# ---------- Home Screen ----------
-if not st.session_state.messages:
-    st.markdown("<div class='chat-title'>What can I help with?</div>", unsafe_allow_html=True)
-    st.markdown("<div class='chat-subtitle'>ChatX can answer questions, write code, analyze files, and help you build.</div>", unsafe_allow_html=True)
-
-# ---------- Show Messages ----------
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# ---------- File Context ----------
-file_context = ""
+    st.markdown("</div>", unsafe_allow_html=True)
 
 if uploaded_file is not None:
     try:
         file_context = uploaded_file.read().decode("utf-8")
-        st.sidebar.success("File uploaded")
     except Exception:
-        st.sidebar.error("Could not read file")
-
-# ---------- Image Context ----------
-image_content = None
+        file_context = "The uploaded file could not be read as text."
 
 if uploaded_image is not None:
     image_bytes = uploaded_image.read()
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-
     image_content = {
         "type": "image_url",
         "image_url": {
             "url": f"data:image/jpeg;base64,{image_base64}"
         }
     }
-
-    st.sidebar.image(uploaded_image, caption="Uploaded image")
-
-# ---------- Chat ----------
-user_input = st.chat_input("Message ChatX...")
 
 if user_input:
     st.session_state.messages.append({
@@ -161,20 +147,16 @@ User memory:
 Uploaded file context:
 {file_context}
 
-Behavior:
-- Be clear, useful, and intelligent.
+Rules:
+- Be clear, helpful, and practical.
 - Use Markdown.
 - Use code blocks for code.
-- Explain step by step when helpful.
-- If the user uploads a file, use it as context.
+- If the user uploads a file, analyze it when relevant.
 - If the user uploads an image, analyze it when relevant.
 """
 
     api_messages = [
-        {
-            "role": "system",
-            "content": system_prompt
-        }
+        {"role": "system", "content": system_prompt}
     ]
 
     for msg in st.session_state.messages:
@@ -193,7 +175,7 @@ Behavior:
         })
 
     with st.chat_message("assistant"):
-        message_placeholder = st.empty()
+        placeholder = st.empty()
         full_response = ""
 
         stream = client.chat.completions.create(
@@ -206,9 +188,9 @@ Behavior:
         for chunk in stream:
             if chunk.choices[0].delta.content:
                 full_response += chunk.choices[0].delta.content
-                message_placeholder.markdown(full_response + "▌")
+                placeholder.markdown(full_response + "▌")
 
-        message_placeholder.markdown(full_response)
+        placeholder.markdown(full_response)
 
     st.session_state.messages.append({
         "role": "assistant",
