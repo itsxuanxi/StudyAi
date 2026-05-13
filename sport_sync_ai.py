@@ -1,8 +1,9 @@
 import streamlit as st
 from openai import OpenAI
+import random
 
 st.set_page_config(
-    page_title="SportSync AI",
+    page_title="PulsePlay AI",
     page_icon="⚡",
     layout="wide"
 )
@@ -13,42 +14,152 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 st.markdown("""
 <style>
 .block-container {
-    padding-top: 2rem;
-    max-width: 1200px;
+    max-width: 1300px;
+    padding-top: 1.5rem;
 }
+
+.hero {
+    padding: 40px 0px;
+}
+
+.hero-title {
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.hero-sub {
+    font-size: 22px;
+    color: #6b7280;
+    margin-top: 12px;
+}
+
 .card {
-    background: #ffffff;
+    background: white;
     padding: 24px;
-    border-radius: 20px;
+    border-radius: 24px;
     border: 1px solid #e5e7eb;
-    margin-bottom: 18px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
 }
-.highlight {
-    color: #2563eb;
+
+.metric-card {
+    background: linear-gradient(135deg,#2563eb,#7c3aed);
+    color: white;
+    padding: 24px;
+    border-radius: 22px;
+}
+
+.metric-number {
+    font-size: 42px;
+    font-weight: 800;
+}
+
+.metric-label {
+    opacity: 0.9;
+}
+
+.section-title {
+    font-size: 38px;
     font-weight: 700;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.small {
+    color: #6b7280;
+}
+
+.game-title {
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.player-name {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.ai-box {
+    background: linear-gradient(135deg,#111827,#1f2937);
+    color: white;
+    padding: 30px;
+    border-radius: 28px;
+}
+
+.tag {
+    display:inline-block;
+    padding:6px 14px;
+    border-radius:999px;
+    background:#eff6ff;
+    color:#2563eb;
+    font-weight:600;
+    margin-right:8px;
+    margin-top:8px;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------- HERO ----------
 st.markdown("""
-# ⚡ SportSync AI
-### AI-powered social sports network for finding games, teammates, and active communities near you.
+<div class="hero">
+<div class="hero-title">
+⚡ PulsePlay AI
+</div>
 
-Stop asking random group chats.  
-Get matched with the right people, right sport, right location, and right skill level.
-""")
+<div class="hero-sub">
+AI-powered sports social network for finding games, teammates, and active communities nearby.
+</div>
+</div>
+""", unsafe_allow_html=True)
 
-st.divider()
+# ---------- TOP METRICS ----------
+c1, c2, c3, c4 = st.columns(4)
 
-# ---------- USER INPUT ----------
-col1, col2, col3 = st.columns(3)
+with c1:
+    st.markdown("""
+    <div class="metric-card">
+    <div class="metric-number">12k+</div>
+    <div class="metric-label">Active Players</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-with col1:
+with c2:
+    st.markdown("""
+    <div class="metric-card">
+    <div class="metric-number">840+</div>
+    <div class="metric-label">Games This Week</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with c3:
+    st.markdown("""
+    <div class="metric-card">
+    <div class="metric-number">92%</div>
+    <div class="metric-label">Match Accuracy</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with c4:
+    st.markdown("""
+    <div class="metric-card">
+    <div class="metric-number">4.9★</div>
+    <div class="metric-label">Community Rating</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.write("")
+st.write("")
+
+# ---------- FILTERS ----------
+st.markdown('<div class="section-title">Find Your Next Game</div>', unsafe_allow_html=True)
+
+f1, f2, f3 = st.columns(3)
+
+with f1:
     sport = st.selectbox(
         "Sport",
-        ["Basketball", "Soccer", "Tennis", "Volleyball", "Badminton", "Running", "Gym"]
+        ["Basketball", "Soccer", "Volleyball", "Tennis", "Running", "Gym"]
     )
 
     skill = st.selectbox(
@@ -56,203 +167,206 @@ with col1:
         ["Beginner", "Casual", "Intermediate", "Advanced", "Competitive"]
     )
 
-with col2:
+with f2:
     location = st.text_input(
         "Location",
-        placeholder="e.g. McGill, Concordia, Downtown Montreal"
+        placeholder="e.g. Downtown Montreal"
     )
 
-    time = st.selectbox(
-        "Availability",
-        ["Today", "Tomorrow", "This weekend", "Weekday evenings", "Weekend mornings"]
-    )
-
-with col3:
     vibe = st.selectbox(
         "Game Vibe",
-        ["Casual", "Competitive", "Social", "Training", "Beginner-friendly"]
+        ["Casual", "Competitive", "Social", "Training"]
+    )
+
+with f3:
+    availability = st.selectbox(
+        "Availability",
+        ["Tonight", "Tomorrow", "Weekend", "Weekday Evenings"]
     )
 
     goal = st.selectbox(
-        "Your Goal",
-        ["Find a game", "Find teammates", "Create a group", "Meet sporty friends", "Train consistently"]
+        "Goal",
+        ["Find Games", "Meet People", "Train", "Find Teammates"]
     )
 
-st.divider()
+# ---------- AI SECTION ----------
+st.write("")
+st.markdown("""
+<div class="ai-box">
+<h2>🤖 AI Matchmaking Engine</h2>
 
-# ---------- FAKE DATABASE ----------
-players = [
-    {"name": "Alex", "sport": "Basketball", "skill": "Intermediate", "location": "McGill", "rating": "4.8", "vibe": "Competitive"},
-    {"name": "Maya", "sport": "Basketball", "skill": "Casual", "location": "Concordia", "rating": "4.7", "vibe": "Social"},
-    {"name": "Daniel", "sport": "Soccer", "skill": "Advanced", "location": "Downtown Montreal", "rating": "4.9", "vibe": "Competitive"},
-    {"name": "Sophie", "sport": "Tennis", "skill": "Beginner", "location": "Parc Jeanne-Mance", "rating": "4.6", "vibe": "Beginner-friendly"},
-    {"name": "Ryan", "sport": "Gym", "skill": "Intermediate", "location": "Concordia", "rating": "4.8", "vibe": "Training"},
-]
+PulsePlay AI analyzes:
+- skill compatibility
+- game vibe
+- location proximity
+- activity level
+- player reliability
+- social compatibility
 
-games = [
-    {"title": "McGill Basketball Run", "sport": "Basketball", "skill": "Intermediate", "location": "McGill Gym", "time": "Tomorrow", "spots": "3 spots left", "vibe": "Competitive"},
-    {"title": "Concordia Casual Hoops", "sport": "Basketball", "skill": "Casual", "location": "Concordia Gym", "time": "Today", "spots": "4 spots left", "vibe": "Social"},
-    {"title": "Downtown Soccer 5v5", "sport": "Soccer", "skill": "Advanced", "location": "McGill Lower Field", "time": "This weekend", "spots": "5 spots left", "vibe": "Competitive"},
-    {"title": "Beginner Tennis Match", "sport": "Tennis", "skill": "Beginner", "location": "Parc Jeanne-Mance", "time": "This weekend", "spots": "1 spot left", "vibe": "Beginner-friendly"},
-    {"title": "Evening Gym Partner Session", "sport": "Gym", "skill": "Intermediate", "location": "Concordia Fitness Centre", "time": "Weekday evenings", "spots": "2 spots left", "vibe": "Training"},
-]
+to recommend your best sports matches.
+</div>
+""", unsafe_allow_html=True)
 
-# ---------- FILTER ----------
-matched_games = [
-    g for g in games
-    if g["sport"] == sport
-    and (location == "" or location.lower() in g["location"].lower())
-]
+st.write("")
 
-matched_players = [
-    p for p in players
-    if p["sport"] == sport
-    and (location == "" or location.lower() in p["location"].lower())
-]
+if st.button("Generate AI Match Recommendations"):
+    with st.spinner("Analyzing sports compatibility..."):
 
-# ---------- DASHBOARD ----------
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Matched Games", len(matched_games))
-m2.metric("Matched Players", len(matched_players))
-m3.metric("Avg Match Score", "87%")
-m4.metric("Active Area", location if location else "Montreal")
+        prompt = f"""
+You are an elite AI sports matchmaking system.
 
-st.divider()
-
-# ---------- AI MATCHMAKING ----------
-st.header("🤖 AI Matchmaking Recommendation")
-
-if st.button("Generate AI Match Plan"):
-    if location:
-        with st.spinner("Finding your best sports matches..."):
-            prompt = f"""
-You are an AI matchmaking assistant for a social sports app.
-
-User profile:
+User:
 Sport: {sport}
-Skill level: {skill}
+Skill: {skill}
 Location: {location}
-Availability: {time}
-Game vibe: {vibe}
+Vibe: {vibe}
+Availability: {availability}
 Goal: {goal}
 
-Available games:
-{games}
+Generate:
 
-Available players:
-{players}
+1. Best game recommendation
+2. Best type of teammate
+3. Ideal sports environment
+4. One suggested message
+5. One smart social tip
+6. One growth idea for building a recurring sports community
 
-Create a smart sports matchmaking plan with:
-
-1. Best Game Recommendation
-2. Best Player Type to Match With
-3. Suggested Message to Join or Invite
-4. Why this match makes sense
-5. Safety / social advice
-6. How to make this into a recurring sports group
-
-Make it practical, premium, and startup-app style.
+Make it premium, modern, and startup-quality.
 """
 
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}]
-            )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
 
-            st.markdown(response.choices[0].message.content)
-    else:
-        st.warning("Enter a location first.")
+        st.markdown(response.choices[0].message.content)
 
-st.divider()
+# ---------- GAMES ----------
+st.write("")
+st.markdown('<div class="section-title">🔥 Trending Games Nearby</div>', unsafe_allow_html=True)
 
-# ---------- GAME CARDS ----------
-st.header("🔥 Recommended Games")
+games = [
+    {
+        "title": "McGill Basketball Run",
+        "location": "McGill Gym",
+        "players": "12/15",
+        "skill": "Intermediate",
+        "vibe": "Competitive"
+    },
+    {
+        "title": "Downtown Soccer 5v5",
+        "location": "Montreal Downtown",
+        "players": "8/10",
+        "skill": "Casual",
+        "vibe": "Social"
+    },
+    {
+        "title": "Concordia Volleyball Night",
+        "location": "Concordia Gym",
+        "players": "14/18",
+        "skill": "Beginner",
+        "vibe": "Training"
+    }
+]
 
-if matched_games:
-    cols = st.columns(2)
+g1, g2, g3 = st.columns(3)
 
-    for i, game in enumerate(matched_games):
-        with cols[i % 2]:
-            st.markdown(f"""
-<div class="card">
-<h3>{game['title']}</h3>
-<p><b>Sport:</b> {game['sport']}</p>
-<p><b>Skill:</b> {game['skill']}</p>
-<p><b>Location:</b> {game['location']}</p>
-<p><b>Time:</b> {game['time']}</p>
-<p><b>Vibe:</b> {game['vibe']}</p>
-<p><span class="highlight">{game['spots']}</span></p>
-</div>
-""", unsafe_allow_html=True)
-            st.button(f"Join {game['title']}", key=f"join_{i}")
-else:
-    st.warning("No matching games found. Try a broader location or different sport.")
+for col, game in zip([g1, g2, g3], games):
+    with col:
+        st.markdown(f"""
+        <div class="card">
+        <div class="game-title">{game['title']}</div>
 
-st.divider()
+        <div class="tag">{game['skill']}</div>
+        <div class="tag">{game['vibe']}</div>
 
-# ---------- PLAYER CARDS ----------
-st.header("👥 Matched Players")
+        <p class="small">
+        📍 {game['location']}<br>
+        👥 {game['players']} players joined
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-if matched_players:
-    cols = st.columns(3)
+        st.button("Join Game", key=game["title"])
 
-    for i, player in enumerate(matched_players):
-        with cols[i % 3]:
-            st.markdown(f"""
-<div class="card">
-<h3>{player['name']}</h3>
-<p><b>Sport:</b> {player['sport']}</p>
-<p><b>Skill:</b> {player['skill']}</p>
-<p><b>Area:</b> {player['location']}</p>
-<p><b>Vibe:</b> {player['vibe']}</p>
-<p><b>Rating:</b> ⭐ {player['rating']}</p>
-</div>
-""", unsafe_allow_html=True)
-            st.button(f"Invite {player['name']}", key=f"invite_{i}")
-else:
-    st.info("No matched players yet.")
+# ---------- PLAYERS ----------
+st.write("")
+st.markdown('<div class="section-title">👥 Suggested Players</div>', unsafe_allow_html=True)
 
-st.divider()
+players = [
+    {
+        "name": "Alex",
+        "sport": "Basketball",
+        "skill": "Intermediate",
+        "rating": "4.9"
+    },
+    {
+        "name": "Maya",
+        "sport": "Soccer",
+        "skill": "Casual",
+        "rating": "4.8"
+    },
+    {
+        "name": "Ryan",
+        "sport": "Gym",
+        "skill": "Advanced",
+        "rating": "5.0"
+    }
+]
+
+p1, p2, p3 = st.columns(3)
+
+for col, player in zip([p1, p2, p3], players):
+    with col:
+        compatibility = random.randint(82, 98)
+
+        st.markdown(f"""
+        <div class="card">
+        <div class="player-name">{player['name']}</div>
+
+        <div class="tag">{player['sport']}</div>
+        <div class="tag">{player['skill']}</div>
+
+        <p class="small">
+        ⭐ Rating: {player['rating']}<br>
+        🤝 Compatibility: {compatibility}%
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.button("Connect", key=player["name"])
 
 # ---------- CREATE GAME ----------
-st.header("➕ Create a New Game")
+st.write("")
+st.markdown('<div class="section-title">➕ Create a Game</div>', unsafe_allow_html=True)
 
 with st.form("create_game"):
-    c1, c2 = st.columns(2)
+    title = st.text_input("Game Title")
+    place = st.text_input("Location")
+    time = st.text_input("Time")
+    description = st.text_area("Description")
 
-    with c1:
-        new_title = st.text_input("Game Title", placeholder="e.g. Friday Night Basketball Run")
-        new_sport = st.selectbox("Sport Type", ["Basketball", "Soccer", "Tennis", "Volleyball", "Badminton", "Running", "Gym"])
-        new_location = st.text_input("Game Location", placeholder="e.g. Concordia Gym")
+    submit = st.form_submit_button("Create Game")
 
-    with c2:
-        new_skill = st.selectbox("Required Skill Level", ["Beginner", "Casual", "Intermediate", "Advanced", "Competitive"])
-        new_time = st.text_input("Game Time", placeholder="e.g. Friday 7 PM")
-        new_spots = st.number_input("Players Needed", min_value=1, max_value=30, value=5)
+    if submit:
+        st.success("Game created successfully.")
 
-    description = st.text_area("Game Description", placeholder="Describe the vibe, rules, and who should join.")
-
-    submitted = st.form_submit_button("Create Game")
-
-    if submitted:
-        st.success("Game created! In a real product, this would be saved to a database.")
-
-st.divider()
-
-# ---------- STARTUP POSITIONING ----------
-st.header("🚀 Product Vision")
-
+# ---------- FOOTER ----------
+st.write("")
+st.write("")
 st.markdown("""
-SportSync AI is not just a sports meetup app.
+---
+### 🚀 PulsePlay AI Vision
 
-It is an **AI-powered sports social network** that can evolve into:
+PulsePlay AI is building the future of:
+- sports matchmaking
+- active social networking
+- local sports communities
+- AI-powered teammate discovery
+- real-world social experiences
 
-- Player matching
-- Recurring sports groups
-- Campus sports communities
-- Paid premium groups
-- Court discovery
-- Team formation
-- Local sports marketplace
-- Brand sponsorships
+Built as an AI SaaS prototype.
 """)
